@@ -38,7 +38,12 @@
 
     // for auto-completion of citekeys and auto-bibs
     // enter the full path to your .bib file here
+    // for citavi enter the path to your citavi project .ctv6 file
     "bibfile": "/path/to/zotero.bib",
+
+    // type of yoour bibfile: bibtex or citavi
+    // if nothing is selected bibtex will be the standard
+    //"bibtype": "citavi",
 
     // make sure images don't get too large
     // scale them to max_width, proportionally

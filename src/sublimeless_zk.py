@@ -39,6 +39,7 @@ from zkutils import sanitize_filename, split_search_terms, open_hyperlink
 from findrefcountdlg import show_find_refcount_dlg
 from notewatcher import NotesWatcher
 
+from citavi import Citavi
 
 class Sublimeless_Zk(QObject):
     def __init__(self, parent=None):
@@ -1150,7 +1151,12 @@ class Sublimeless_Zk(QObject):
         settings = self.project.settings
         convert_to_unicode = settings.get('convert_bibtex_to_unicode', False)
 
-        self.bib_entries = Autobib.extract_all_entries(bibfile, unicode_conversion=convert_to_unicode)
+        if self.project.settings.get('bibtype') == "citavi":
+            print('a')
+            self.bib_entries = Citavi.extract_all_entries(bibfile, unicode_conversion=convert_to_unicode)
+        else:
+            self.bib_entries = Autobib.extract_all_entries(bibfile, unicode_conversion=convert_to_unicode)
+
         self.gui.statusBar().clearMessage()
 
     def insert_citation(self, pos=None):
@@ -1169,9 +1175,12 @@ class Sublimeless_Zk(QObject):
 
         ck_choices = {}
         for citekey, d in self.bib_entries.items():
-            if not d['authors']:
-                d['authors'] = d['editors']
-            item = '{} {} - {} ({})'.format(d['authors'], d['year'], d['title'], citekey)
+            if self.project.settings.get('bibtype') == "citavi":
+                item = d['shortTitle']
+            else:
+                if not d['authors']:
+                    d['authors'] = d['editors']
+                item = '{} {} - {} ({})'.format(d['authors'], d['year'], d['title'], citekey)
             ck_choices[item] = citekey
         item, citekey = show_fuzzy_panel(self.gui.qtabs, 'Insert Citation', ck_choices, longlines=True, manylines=True)
 
@@ -1207,7 +1216,12 @@ class Sublimeless_Zk(QObject):
                 if not pandoc:
                     QMessageBox.warning(editor, 'Pandoc not found', 'The pandoc program could not be executed. Have you installed it?\n\nCheck the setting "path_to_pandoc".')
                     return
-                ck2bib = Autobib.create_bibliography(text, bibfile, pandoc=pandoc)
+
+                if self.project.settings.get('bibtype') == "citavi":
+                    ck2bib = Citavi.create_bibliography(text, bibfile, pandoc=pandoc)
+                else:
+                    ck2bib = Autobib.create_bibliography(text, bibfile, pandoc=pandoc)
+
                 marker = '<!-- references (auto)'
                 marker_line = marker
                 if mmd_style:
@@ -1228,8 +1242,9 @@ class Sublimeless_Zk(QObject):
                 result_text += '\n' + '\n'.join(bib_lines) + '\n'
                 editor.setText(result_text)
                 editor.setCursorPosition(editor.lines(), 0)
-            except:
+            except Exception as e:
                 Autobib.log_exception('wtf', True)
+                print('Error creating Autobib: %s' % e)
 
     def auto_toc(self):
         # TOC markers
